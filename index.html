@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html>
+ <head>
+ <title>StackSiteProject</title>
+ <meta charset="UTF-8">
+ <script type="text/javascript">
+  //var XFoo = document.createElement('tree-col');
+ 
+//CSS
+//IT USES THE VERSION 3 of the FLEXBOX Standard and only needs to use the following prefixes:
+// 1. -webkit-
+// 2. the standard
+
+// THINGS TO DO:
+// 1. Make it work with flex wrap
+// 2. Make it work on tables
+// 3. Make it work as a custom Collapsible tree element
+// 4. clean up the code
+   
+   var zoshe = {};
+   
+  function treeColResizer(elm,moveIt,panIt){
+   
+   function rndFloat(x){
+    return Number(parseFloat(x).toFixed(1));
+   }
+   
+   function sizeConsoleTest(happenHere){
+    console.log("happenHere: "+happenHere);
+    console.log("oldKidsSize: "+oldKidsSize);
+    console.log("newKidsSize: "+newKidsSize);
+    console.log("avalPanBck: "+avalPanBck);
+    console.log("avalPanFwd: "+avalPanFwd);
+   }
+ 
+   
+   var selectedResizer = elm;
+   var zo = zoshe;
+   var selectedResizerIncreased = moveIt>0;
+   var selectedResizerDecreased = moveIt<0;
+   var selectedResizerValueIncreased = (selectedResizerIncreased)? rndFloat(Math.abs(moveIt)) : 0;
+   var selectedResizerValueDecreased = (selectedResizerDecreased)? rndFloat(Math.abs(moveIt)) : 0;
+   if(panIt){
+   selectedResizerIncreased = panIt=="F";
+   selectedResizerDecreased = panIt=="B";
+   }
+  
+   var isWhat = (selectedResizerIncreased)? "Increased" : "Decreased";
+   console.log("START ACTION" +": " + isWhat);
+   console.log("SizeBy: "+((isWhat=="Increased")? selectedResizerValueIncreased : selectedResizerValueDecreased)+"%");
+   
+   
+   var resizerParent = selectedResizer.parentNode;
+   var resizerParentChildren = resizerParent.children;
+   var resizerParentChildrenQty = resizerParentChildren.length || 0;
+   
+   // The max should be on the treepannel box, for now I'll keep it at default 100
+   var selectedResizerMax = 100;
+   //var selectedResizerMax = parseInt(selectedResizer.getAttribute("max"))||0;
+
+   var treeBody = resizerParent.parentNode.nextElementSibling;
+   var treeItems = treeBody.querySelectorAll(".tree-item");
+   var updateTreeBoxSizes = [];
+   
+   var childIsBeforeSelectedResizer = 1;
+   var childIsAfterSelectedResizer = 0;
+   
+   //adds up all the Previous Childern new and old sizes on each loop. 
+   var oldKidsSize = 0;
+   var newKidsSize = 0;
+   var avalPanBck = 0;
+   var avalPanFwd = 0;
+
+   ////// RESIZER VALUE INCREASED
+   //LOOP from start to end of all the Flex Child containers and reSizers 
+   if(selectedResizerIncreased){
+   for(var i = 0; i < resizerParentChildrenQty;i++){
+   var child = resizerParentChildren[i];
+   var childFlexSize = rndFloat(child.getAttribute("data-zFlex")) || 0;
+   var childClassName = child.hasAttribute("class") && child.getAttribute("class");
+   var isResizer = childClassName && childClassName.indexOf("tree-head-gutter")>-1;
+   var childIsSelectedResizer = isResizer && child == selectedResizer;
+
+   var resizer = isResizer && child;
+   var isContainer = !isResizer;
+   
+   var nextChild = i+1 < resizerParentChildrenQty && resizerParentChildren[i+1];
+   var nextFlexSize = nextChild && rndFloat(nextChild.getAttribute("data-zFlex")) || 0;
+   var nextClassName = nextChild && nextChild.hasAttribute("class") && nextChild.getAttribute("class");
+   var nextIsThumb = nextClassName && nextClassName.indexOf("tree-head-gutter")>-1;
+   var nextChildIsSelectedResizer = nextIsThumb && nextChild == selectedResizer;
+    
+   var perviousChild = i>0 && resizerParentChildren[i-1];
+   var perviousClassName = perviousChild && perviousChild.hasAttribute("class") && perviousChild.getAttribute("class");
+   var perviousIsThumb = perviousClassName && perviousClassName.indexOf("tree-head-gutter")>-1;
+   var perviousChildIsSelectedResizer = perviousIsThumb && perviousChild == selectedResizer;
+   
+  
+   //-- IS CONTAINER && childIsBeforeSelectedResizer
+   if(isContainer && childIsBeforeSelectedResizer){
+   var moveIt = nextChildIsSelectedResizer;
+   var useInt = (moveIt)? rndFloat(childFlexSize + selectedResizerValueIncreased) : childFlexSize;
+   updateTreeBoxSizes.push(useInt);
+   oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+   newKidsSize = rndFloat(newKidsSize + useInt);
+   avalPanBck = rndFloat(avalPanBck + useInt);
+   sizeConsoleTest("if1-INCREASED");
+   //avalPanBefore = useInt;
+   //alert("loop:"+i +" "+ "if1: " + "useInt="+ useInt +" " + "useFloat="+ useFloat);
+   }
+    
+   //-- IS CONTAINER && childIsAfterSelectedResizer
+   else if(isContainer && childIsAfterSelectedResizer){
+   var moveIt = newKidsSize > oldKidsSize;
+   var useInt = (moveIt)? rndFloat((oldKidsSize + childFlexSize) - newKidsSize) : childFlexSize;
+   useInt = (useInt>0)? useInt  : 0;
+   updateTreeBoxSizes.push(useInt);
+   oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+   newKidsSize = rndFloat(newKidsSize + useInt);
+   avalPanFwd = rndFloat(avalPanFwd + useInt);
+   sizeConsoleTest("if2-INCREASED");
+
+   //alert("loop:"+i +" "+ "if2: " + "useInt="+ useInt +" " + "useFloat="+ useFloat);
+   }
+   
+   //-- IS RESIZER
+   else if(isResizer){
+    var isSelectedResizer = resizer == selectedResizer;
+  
+    oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+    newKidsSize = rndFloat(newKidsSize + childFlexSize);
+    updateTreeBoxSizes.push(childFlexSize);
+
+    if(isSelectedResizer){
+    childIsBeforeSelectedResizer = 0;
+    childIsAfterSelectedResizer = 1;
+    }
+    
+   sizeConsoleTest("if3-INCREASED");
+  
+   //alert("loop:"+i +" "+ "if3: " + "childFlexSize="+ childFlexSize);
+   }
+    
+   //-- DID NOT find anything
+   else{
+    console.log("can't go anymore");
+   //alert("loop:"+i +" "+ "if4: " + "picked nothing");
+   }
+   
+   }//end for loop 
+   }// end if
+   
+   ////// RESIZER VALUE DECREASED
+   //LOOP from end to start of all the Flex Child containers and Resizers 
+   else if(selectedResizerDecreased){
+   for(var i = resizerParentChildrenQty; i > 0;i--){
+   
+   var child = resizerParentChildren[i-1];
+   var childFlexSize = rndFloat(child.getAttribute("data-zFlex")) || 0;
+   var childClassName = child.hasAttribute("class") && child.getAttribute("class");
+   var isResizer = childClassName && childClassName.indexOf("tree-head-gutter")>-1;
+   var resizer = isResizer && child;
+   var isContainer = !isResizer;
+   
+   var nextChild = i>1 && resizerParentChildren[i-2];
+   var nextFlexSize = nextChild && rndFloat(nextChild.getAttribute("data-zFlex")) || 0;
+   var nextClassName = nextChild && nextChild.hasAttribute("class") && nextChild.getAttribute("class");
+   var nextIsThumb = nextClassName && nextClassName.indexOf("tree-head-gutter")>-1;
+   var nextChildIsSelectedResizer = nextIsThumb && nextChild == selectedResizer;
+    
+   var perviousChild = i<resizerParentChildrenQty && resizerParentChildren[i];
+   var perviousClassName = perviousChild && perviousChild.hasAttribute("class") && perviousChild.getAttribute("class");
+   var perviousIsThumb = perviousClassName && perviousClassName.indexOf("tree-head-gutter")>-1;
+   var perviousChildIsSelectedResizer = perviousIsThumb && perviousChild == selectedResizer;
+    
+    //-- IS CONTAINER && childIsBeforeSelectedResizer
+   if(isContainer && childIsBeforeSelectedResizer){
+   var moveIt = nextChildIsSelectedResizer;
+   var useInt = (moveIt)? rndFloat(childFlexSize + selectedResizerValueDecreased) : childFlexSize;
+   updateTreeBoxSizes.unshift(useInt);
+   oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+   newKidsSize = rndFloat(newKidsSize + useInt);
+   avalPanFwd = rndFloat(avalPanFwd + useInt);
+   sizeConsoleTest("if1-DECREASED");
+   //alert("loop:"+i +" "+ "if1: " + "useInt="+ useInt +" " + "useFloat="+ useFloat);
+   }
+    
+   //-- IS CONTAINER && childIsAfterSelectedResizer
+   else if(isContainer && childIsAfterSelectedResizer){
+   var moveIt = newKidsSize > oldKidsSize;
+   var useInt = (moveIt)? rndFloat((oldKidsSize + childFlexSize) - newKidsSize) : childFlexSize;
+   useInt = (useInt>0)? useInt  : 0;
+   updateTreeBoxSizes.unshift(useInt);
+   oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+   newKidsSize = rndFloat(newKidsSize + useInt);
+   avalPanBck = rndFloat(avalPanBck + useInt);
+   sizeConsoleTest("if2-DECREASED");
+   //alert("loop:"+i +" "+ "if2: " + "useInt="+ useInt +" " + "useFloat="+ useFloat);
+   }
+   
+   //-- IS RESIZER
+   else if(isResizer){
+   var isSelectedResizer = resizer == selectedResizer;
+  
+    oldKidsSize = rndFloat(oldKidsSize + childFlexSize);
+    newKidsSize = rndFloat(newKidsSize + childFlexSize);
+    updateTreeBoxSizes.unshift(childFlexSize);
+
+    if(isSelectedResizer){
+    childIsBeforeSelectedResizer = 0;
+    childIsAfterSelectedResizer = 1;
+    }
+   sizeConsoleTest("if3-DECREASED");
+   //alert("loop:"+i +" "+ "if3: " + "childFlexSize="+ childFlexSize);
+   }
+    
+   //-- DID NOT find anything
+   else{
+   //alert("loop:"+i +" "+ "if4: " + "picked nothing");
+   }
+   
+   }//end for loop
+   }// end else if
+   
+   
+   //console.log("oldKidsSize: "+oldKidsSize + " " + selectedResizerMax);
+   //console.log("newKidsSize: "+newKidsSize + " " + selectedResizerMax);
+   
+   console.log("END ACTION");
+   zo.avalPanBck = avalPanBck;
+   zo.avalPanFwd = avalPanFwd;
+
+
+   //Update the new sizes if there is room
+   if(newKidsSize == selectedResizerMax){
+   for(var i = 0; i < resizerParentChildrenQty;i++){
+   var child = resizerParentChildren[i];
+   var useInt = updateTreeBoxSizes[i];
+   var useFloat = useInt;
+//   var useFloat = useInt/selectedResizerMax;
+   var useCSS = useFloat +" "+ useFloat +" "+ useInt+"%";
+   child.style.WebkitFlex = useCSS;
+   child.style.flex = useCSS;
+   child.setAttribute("data-zFlex",useInt);
+   updateTreeBoxSizes[i] = useCSS;
+   }
+   
+   // If space is left and is smaller than a step, this will tell the next pan to move it
+   
+    // may not be needed If no room exist then add to the var zoshe = {} which way can can no longer move
+// UPDATE all the treeboxes to match the header boxe sizes
+    /*
+   var treeItemsQty = treeItems.length || 0;
+   var updateTreeBoxSizesQty = updateTreeBoxSizes.length || 0;
+   for(var i = 0; i < treeItemsQty;i++){
+   var treeItem = treeItems[i];
+   var treeBoxes = treeItem.querySelectorAll(".tree-cell");
+    for(var ii = 0; ii < updateTreeBoxSizesQty;ii++){
+    var treeBox = treeBoxes[ii];
+    treeBox.style.WebkitFlex = updateTreeBoxSizes[ii];
+    treeBox.style.flex = updateTreeBoxSizes[ii];
+    }
+    
+   }
+   */
+   }
+  }//end Ftn
+   
+
+   
+   function onkeyDownResize(evt){
+    var elm = this;
+    var kyCde = evt.keyCode;
+    
+    //37:left, 38:up, 39:right, 40:down
+    //DECREASED its size if they press the left or up arrow key 
+    if(kyCde==37||kyCde==38){
+     treeColResizer(elm,-1);
+    }
+    //INCREASED its size if they press the right or down arrow key
+    else if(kyCde==39||kyCde==40){
+     treeColResizer(elm,1);
+    }
+   }
+   
+    
+   function setResizer(evt){
+    var elm = this;
+    evt.preventDefault();
+    var parent = elm.parentNode;
+    var win = window;
+    var parentClientRect = parent.getBoundingClientRect();
+    var panType = parent.getAttribute("z-flex");
+    var panSteps = parseInt(parent.getAttribute("z-step"))||100;
+    var panStep = ((panType=="X")?parentClientRect.width:parentClientRect.height)/panSteps;
+    var pointerClientX = evt.clientX;
+    var pointerClientY = evt.clientY;
+    //console.log(parentClientRect.width);
+    
+    zoshe = {
+     elm: elm,
+     panType: panType,
+     pointLastX: pointerClientX,
+     pointLastY: pointerClientY,
+     panStep:  panStep,
+     panStepStart:(panType=="X")?pointerClientX:pointerClientY,
+     avalPanBck: 0,
+     avalPanFwd: 0
+    }
+    // Prime Resizer
+    // this sets the avalPanBck & avalPanFwd before the user does a panmove. Without it, it would be
+    // impossible to know before the first panning if it can be resized in that direction and/or if
+    // it needs to be resized less than a panStep and etc. Basically it is very important to run this
+    // function once before the user can using a resizing value of 0.
+    // Without Priming, it would require a ton of extra code on each user move. 
+    treeColResizer(elm,0,"F");
+        
+    /*
+    zo.pointPanL = 0;
+    zo.pointPanR = 0;
+    zo.pointPanT = 0;
+    zo.pointPanB = 0;
+    zo.pointPanType = parent.getAttribute("z-flex");
+    */
+    // MAYBE NEEDED a way to create steps automatically so it does not make big jerky steps
+    // On larger screens and not to many when narrow resizing
+    // For now, steps is divided by 100, but this may get crazy on large screens
+    //zo.pointPanSteps = parseInt(parent.getAttribute("z-step"));
+    //zo.panStep =  ((panType=="X")?parentClientRect.width:parentClientRect.height)/panSteps;
+    //zo.pointPanStep = Math.round(((parentZflex=="X")?zo.parentWidth:zo.parentHeight)/zo.pointPanSteps);
+
+    
+    win.addEventListener('touchmove', runResizer, false);
+    win.addEventListener('mousemove', runResizer, false);
+    win.addEventListener('touchend', endResizer, false);
+    win.addEventListener('mouseup', endResizer, false);
+    document.body.setAttribute("zs-us","none");
+   }
+   
+   function runResizer(evt){
+    var zo = zoshe;
+    var elm = zo.elm;
+    var elmClientRect = elm.getBoundingClientRect();
+    var elmRt = elmClientRect.right;
+    var elmLt = elmClientRect.left;
+    var elmTp = elmClientRect.top;
+    var elmBm = elmClientRect.bottom;
+    var parent = elm.parentNode;
+    var parentClientRect = parent.getBoundingClientRect();
+    var parentWidth = parentClientRect.width;
+    var parentHeight = parentClientRect.height;
+    var pointerClientX = evt.clientX;
+    var pointerClientY = evt.clientY;
+    var pointerLastClientX = zo.pointLastX;
+    var pointerLastClientY = zo.pointLastY;
+    var movementX = pointerClientX - pointerLastClientX;
+    var movementY = pointerClientY - pointerLastClientY;
+    var panType = zo.panType;
+    var panTypeIsX = panType == "X";
+    var panTypeIsY = panType == "Y";
+    var panStepStart = zo.panStepStart;
+    var panLt = movementX<0;
+    var panRt = movementX>0;
+    var panTp = movementY<0;
+    var panBm = movementY>0;
+    var panStep = zo.panStep;
+    var panRangeLt = parentClientRect.left;
+    var panRangeRt = parentClientRect.right;
+    var panRangeTp = parentClientRect.top;
+    var panRangeBm = parentClientRect.bottom;
+    var avalPanBck = zo.avalPanBck;
+    var avalPanFwd = zo.avalPanFwd;
+
+  
+
+    //console.log(pointerClientX + " ::: " + pointerLastClientX);
+    
+    //console.log("panLt: "+panLt);
+    
+    // panLeft ######
+    if(panTypeIsX && panLt && avalPanBck && pointerClientX <= elmRt){
+     if(panStepStart>elmRt){
+     zo.panStepStart = panStepStart = elmRt;
+     }
+     var avalPanBckPx = avalPanBck * panStep;
+     var moveItByStep = pointerClientX <= panStepStart-panStep;
+     var moveItByMin = avalPanBckPx < panStep && pointerClientX <= panStepStart - avalPanFwdPx;
+     //console.log("avalPanBck: "+avalPanBck +" avalPanBckPx: "+avalPanBckPx);
+     if(moveItByStep){
+     var moveIt = panStepStart - pointerClientX;
+     moveIt = (moveIt > avalPanBckPx)? avalPanBck : moveIt * 100 / parentWidth;
+     //var MoveItRoundingNumber = Math.round((panStepStart - pointerClientX) / panStep);
+     treeColResizer(elm,-moveIt);
+     zo.panStepStart = pointerClientX;
+     //console.log("panLeft "+ pointerClientX + " " + (panStepStart+panStep) + " " + parentClientRect.width +" "+ (pointerClientX - panStepStart) +" "+ moveIt);
+     }
+     else if(moveItByMin){
+     treeColResizer(elm,-avalPanBck);
+     zo.panStepStart = pointerClientX; 
+     }
+    }
+    
+    // panUp #####
+    else if(panTypeIsY && panTp && avalPanBck && pointerClientY <= elmBm){
+    if(panStepStart>elmBm){
+     zo.panStepStart = panStepStart = elmBm;
+     }
+     var avalPanBckPx = avalPanBck * panStep;
+     var moveItByStep = pointerClientY <= panStepStart-panStep;
+     var moveItByMin = avalPanBckPx < panStep && pointerClientY <= panStepStart - avalPanFwdPx;
+     //console.log("avalPanBck: "+avalPanBck +" avalPanBckPx: "+avalPanBckPx);
+     if(moveItByStep){
+     var moveIt = panStepStart - pointerClientY;
+     moveIt = (moveIt > avalPanBckPx)? avalPanBck : moveIt * 100 / parentHeight;
+     //var MoveItRoundingNumber = Math.round((panStepStart - pointerClientY) / panStep);
+     treeColResizer(elm,-moveIt);
+     zo.panStepStart = pointerClientY;
+     //console.log("panLeft "+ pointerClientY + " " + (panStepStart+panStep) + " " + parentHeight +" "+ (pointerClientY - panStepStart) +" "+ moveIt);
+     }
+     else if(moveItByMin){
+     treeColResizer(elm,-avalPanBck);
+     zo.panStepStart = pointerClientY; 
+     }
+    }
+    
+    // panRight #####
+    else if(panTypeIsX && panRt && avalPanFwd && pointerClientX >= elmBm){     
+     if(panStepStart<elmLt){
+     zo.panStepStart = panStepStart = elmLt;
+     }
+     var avalPanFwdPx = avalPanFwd * panStep;
+     var moveItByStep = pointerClientX >= panStepStart+panStep;
+     var moveItByMin = avalPanFwdPx < panStep && pointerClientX >= panStepStart + avalPanFwdPx;
+     //console.log("avalPanFwd: "+avalPanFwd +" avalPanFwdPx: "+avalPanFwdPx);
+     if(moveItByStep){
+     var moveIt = pointerClientX - panStepStart;
+     moveIt = (moveIt > avalPanFwdPx)? avalPanFwd : moveIt * 100 / parentWidth;
+     //var MoveItRoundingNumber = Math.round((pointerClientX - panStepStart) / panStep); // this does not work
+     treeColResizer(elm,moveIt);
+     zo.panStepStart = pointerClientX;
+     //console.log("panRight "+ pointerClientX + " " + (panStepStart+panStep) + " " + parentWidth +" "+ (pointerClientX - panStepStart) +" "+ moveIt);
+     }
+     else if(moveItByMin){
+     treeColResizer(elm,avalPanFwd);
+     zo.panStepStart = pointerClientX;    
+     }
+    }
+    
+    // panDown #####
+    else if(panTypeIsY && panBm && avalPanFwd &&  pointerClientY >= elmTp){
+     if(panStepStart<elmTp){
+     zo.panStepStart = panStepStart = elmTp;
+     }
+     var avalPanFwdPx = avalPanFwd * panStep;
+     var moveItByStep = pointerClientY >= panStepStart+panStep;
+     var moveItByMin = avalPanFwdPx < panStep && pointerClientY >= panStepStart + avalPanFwdPx;
+     //console.log("avalPanFwd: "+avalPanFwd +" avalPanFwdPx: "+avalPanFwdPx);
+     if(moveItByStep){
+     var moveIt = pointerClientY - panStepStart;
+     moveIt = (moveIt > avalPanFwdPx)? avalPanFwd : moveIt * 100 / parentHeight;
+     //var MoveItRoundingNumber = Math.round((pointerClientY - panStepStart) / panStep); // this does not work
+     treeColResizer(elm,moveIt);
+     zo.panStepStart = pointerClientY;
+     //console.log("panDown "+ pointerClientY + " " + (panStepStart+panStep) + " " + parentHeight +" "+ (pointerClientY - panStepStart) +" "+ moveIt);
+     }
+     else if(moveItByMin){
+     treeColResizer(elm,avalPanFwd);
+     zo.panStepStart = pointerClientY;    
+     }
+    }
+    else{
+    //console.log("don't Pan"); 
+    }
+    zo.pointLastX = pointerClientX;
+   }
+   
+   
+   function endResizer(elm){
+    var docBody = window;
+    docBody.removeEventListener('touchmove', runResizer, false);
+    docBody.removeEventListener('mousemove', runResizer, false);
+    docBody.removeEventListener('touchend', endResizer, false);
+    docBody.removeEventListener('mouseup', endResizer, false);
+    document.body.removeAttribute("zs-us","none");
+    zoshe.curTarget = null;
+   }
+   
+  
+  /// Need to remove and add the new Css for this tree into the Document
+   
+  // Check if a Style Sheet exist for this tree, if so remove all its css and add the new css rules, or create a new one. I chose this method because it help when adding a new tree item, but I could also keep the size info in the pannel in a data field attribute, and every time it needs to add a tree item it gets the size here, but, if its blank it would to trigger a resize and then move on to adding one.
+ function onResizerDown(){
+  // need to add move events and  
+   if (window.PointerEvent) {
+        elm.addEventListener("pointerdown", fn);
+ } else {
+         elm.addEventListener("touchstart", fn);
+         elm.addEventListener("mousedown", fn);
+ }
+ }
+   
+  // It will work better if I block all first
+   /*
+  blah.addEventListener('touchend', function(e) {
+e.preventDefault();
+e.target.click();
+}, false);
+blah.addEventListener('click', someFunction, false);
+   */
+   
+   /* for mousemove and touch move it should look like this
+   var posX, posY;
+function positionHandler(e) {
+if ((e.clientX)&&(e.clientY)) {
+posX = e.clientX;
+posY = e.clientY;
+} else if (e.targetTouches) {
+posX = e.targetTouches[0].clientX;
+posY = e.targetTouches[0].clientY;
+e.preventDefault();
+}
+}
+canvas.addEventListener('mousemove', positionHandler,
+false );
+canvas.addEventListener('touchstart', positionHandler, false
+);
+canvas.addEventListener('touchmove', positionHandler, false
+);
+   */
+   
+   /*
+   function updateTouches(event) { touches = event.touches; }
+document.addEventListener('touchmove', updateTouches);
+window.requestAnimationFrame(renderEverything);
+function renderEverything() {
+  // TODO: Render code goes here.
+  window.requestAnimationFrame(renderEverything);
+}
+*/
+  </script>
+  
+  <style type="text/css">
+   
+  body, html{
+   padding:0px;
+   margin:0px;
+  }
+   
+  *{
+	box-sizing:			border-box;
+	text-rendering: optimizelegibility;
+  }
+   
+   .tree-panel *{
+    
+  }
+  
+  *[zs*=_dplyflexColStrch]{
+    
+  }
+   
+   .tree-panel{
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+    overflow: hidden;
+    background:orange;
+    background:transparent !important;
+    height:100px;
+    margin:auto;
+    width:80%;
+    }
+
+   .tree-head{
+    -webkit-flex: 0 0 auto;
+    flex: 0 0 auto;
+    -webkit-align-self: stretch;
+    align-self:stretch;
+    background:tan;
+    background:transparent !important;
+    width:100%;
+ 
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+   }
+/* 
+   .tree-body::-webkit-scrollbar{
+width: auto;
+}
+*/
+   
+.tree-head-container{
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+ 
+    -webkit-align-self: stretch;
+    align-self:stretch;
+ /*
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+ */
+    background:yellow;
+  position: relative;
+}
+ 
+.tree-head-container div{
+   overflowXX: 33;
+}
+   
+.tree-head-scroll-space{
+ 
+    -webkit-flex: 0 0 auto;
+    flex: 0 0 auto;
+    -webkit-align-self: stretch;
+    align-self:stretch;
+    background:black;
+  }
+
+.tree-head-scroll-space-container{
+ visibility:hidden;
+ overflow:scroll;
+}
+   
+   .tree-head-col{
+    overflow:hidden;
+    background:transparent;
+    }
+     
+   
+   .tree-head-container div:nth-child(1){
+    -webkit-flex:.20 .20 20%;
+    flex:.20 .20 20%;
+    background:tan;
+    }
+   .tree-head-container div:nth-child(2){
+    -webkit-flex:.05 .05 5%;
+    flex:.05 .05 5%;
+    background:lightgreen;
+    }
+   .tree-head-container div:nth-child(3){
+    -webkit-flex:.20 .20 20%;
+    flex:.20 .20 20%;
+    background:yellow;
+    }
+   .tree-head-container div:nth-child(4){
+    -webkit-flex:.05 .05 5%;
+    flex:.05 .05 5%;
+    background:lightblue;
+    }
+   .tree-head-container div:nth-child(5) {
+    -webkit-flex:.5 .5 50%;
+    flex:.5 .5 50%;
+     background:orange;
+  }
+   /*
+   .tree-head-gutter{
+    }
+   
+   .tree-head-col:nth-child(3) {
+    -webkit-flex:.20 .20 20%;
+    flex:.20 .20 20%;
+    background:yellow;
+  }
+   .tree-head-col:nth-child(5) {
+    -webkit-flex:.5 .5 50%;
+    flex:.5 .5 50%;
+     background:orange;
+  }
+*/
+
+.tree-head-spliter-input{
+   pointer-events: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
+   position:absolute;
+   margin:0px;
+   padding:0px;
+   width:100%;
+   height:100%;
+   left:0px;
+   top:0px;
+   background:none;
+ 
+ /*
+ overflow: hidden;
+ 
+    overflow:;
+    width: 5%;
+    outline: none;
+ -webkit-appearance: none;
+    margin:0px;
+ padding:0px;
+ background:none;
+ */
+ /*left:25px;*/
+}
+.Xtree-head-spliter-input:hover {
+ /*
+    pointer-events: none;
+ -webkit-appearance: none;
+ margin:0px;
+ background:blue;
+ /*
+ overflow: hidden;
+ 
+    overflow:;
+    width: 5%;
+    outline: none;
+ -webkit-appearance: none;
+    margin:0px;
+ padding:0px;
+ background:none;
+ */
+ /*left:25px;*/
+}
+   
+  .tree-head-spliter-input::-webkit-slider-container{
+   -webkit-appearance: silder-vertical;
+   height:10px;
+   display: table !important; 
+   -webkit-flex-direction: row !important;
+   
+   
+   /*
+   pointer-events: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
+   margin:0px;
+   background:blue;
+   width:100%;
+   height:100%;
+   */
+   
+   /*
+   -webkit-flex: 1 1 auto;
+    flex: 0 0 auto;
+    -webkit-align-self: stretch;
+    align-self:stretch;
+    background:none;
+   justify-content:flex-end;
+   -webkit-justify-content:flex-end;
+    justify-content: flex-start;
+    -webkit-align-content: flex-end;
+    align-content:flex-end;
+    -webkit-align-items:flex-end;
+    align-items: flex-end;
+    -webkit-box-align: right;
+   */
+
+  }
+   
+   .tree-head-spliter-input::-webkit-slider-runnable-track{
+   -webkit-appearance: none;
+   pointer-events: none;
+   background:none;
+   padding:50% 0%;
+   width:100%;
+   }
+
+.tree-head-spliter-input::-webkit-slider-thumb{
+/* -webkit-flex: .5 .5 50%; */
+   pointer-events:auto;
+   cursor:ew-resize;
+   -webkit-appearance:none;
+   opacity: 0.5;
+	 border: 0px solid #bdc3c7;
+   padding: 2% 0;
+   width:5%;
+   background:black;
+   position:relative;
+}
+   
+.tree-head-spliter-input:focus::-webkit-slider-thumb{
+          
+   outline: blue solid 3px;
+   opacity: 0.5;
+ }
+   
+ .tree-head-spliter-input::-moz-range-track {
+   -moz-appearance: none;
+   pointer-events: none;
+   background:red;
+   margin:0px;
+   padding:0px;
+   border:none;
+   box-sizing: border-box;
+}
+   
+.tree-head-spliter-input::-moz-range-thumb {
+  pointer-events:all;
+  cursor:ew-resize;
+  -moz-appearance: none;
+  opacity: 0.5;
+	border: 0px solid #bdc3c7;
+  padding: 50% 0%;
+  width:5%;
+  background:orange;
+  box-sizing: border-box;
+}
+ .tree-head-spliter-input:focus::-moz-range-thumb {
+          
+   border: blue solid 5px;
+ }
+ /*  
+#inp1::-webkit-slider-thumb{
+    
+ left:attr(data-zFlex %);
+}
+  *[data-zFlex*=20h]::-webkit-slider-thumb{
+    left:1%;
+  }
+   
+.spliter2::-webkit-slider-thumb {
+ background-color:black;
+ z-index: -1;
+}
+*/
+   
+  
+.tree-body{
+    -webkit-order: 0;
+    order: 0;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+    -webkit-align-self: stretch;
+    align-self: stretch;
+    overflow:scroll;
+    overflow-x:hidden;
+    background:firebrick;
+    }
+   
+.tree-item{
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+}
+   
+   .tree-cell:nth-child(1){
+    -webkit-flex:.25 .25 25%;
+    flex:.25 .25 25%;
+    }
+   
+   .tree-cell:nth-child(2){
+    -webkit-flex:.25 .25 25%;
+    flex:.25 .25 25%;
+    
+    }
+   .tree-cell:nth-child(3){
+    -webkit-flex:.5 .5 50%;
+    flex:.5 .5 50%;
+   }
+   
+   .tree-cell{
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+   }
+
+/*
+ -webkit-flex:none;
+ background:tan;
+ min-height:-webkit-min-content;
+ min-height:min-content;
+ min-width: -webkit-min-content;
+ position: relative;
+ right:0px;
+ position: -webkit-sticky;
+ position:sticky;
+ top:0px;
+ -webkit-order: 0;
+    -ms-flex-order: 0;
+    order: 0;
+ */ 
+   
+   /*
+       width:-webkit-fill;
+position: -webkit-sticky;
+    position: sticky; 
+       -webkit-logical-width: fill;
+   width:-webkit-fill-available;
+      width:-webkit-intrinsic;
+   width:-webkit-min-content;
+ min-height:-webkit-min-content;
+   */
+   
+   /*
+ justify-content:flex-end;
+   -webkit-justify-content:flex-end;
+    justify-content: flex-start;
+    -webkit-align-content: flex-end;
+    align-content:flex-end;
+    -webkit-align-items:flex-end;
+    align-items: flex-end;
+ -webkit-box-align: right;
+ margin:auto;
+ */
+   
+   /*
+    position:absolute;
+    width:100%;
+    height:0px;
+   
+    -webkit-flex: .5 .5 50%;
+    -webkit-align-self: stretch;
+    align-self:stretch;
+    background:none;
+   justify-content:flex-end;
+   -webkit-justify-content:flex-end;
+    justify-content: flex-start;
+    -webkit-align-content: flex-end;
+    align-content:flex-end;
+    -webkit-align-items:flex-end;
+    align-items: flex-end;
+    -webkit-box-align: right;
+    */
+
+   *[z-flex*=X]{
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-content: stretch;
+    align-content: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+   }
+   
+   *[zs-us*=none]{
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -ms-touch-select: none;
+    touch-select: none;
+    -webkit-touch-callout: none;
+    touch-callout: none;
+    -ms-content-zooming: 'none';
+    content-zooming: 'none';
+    -webkit-user-drag: none;
+    user-drag: none;
+   }
+   
+   *[zs-us*=none]:active{
+	-webkit-tap-highlight-color: rgba(0,0,0,0);
+	-moz-tap-highlight-color: rgba(0,0,0,0);
+	tap-highlight-color: rgba(0,0,0,0);
+}
+   
+  </style>
+ </head>
+
+ <body>
+  <div>Top space top</div>
+  <div class="tree-panel" zs="" col="3" min="0" max="100" step="all">
+   <div class="tree-head" zs="">
+     <div class="tree-head-container" z-flex="X" z-step="100">
+     <div class="tree-head-col" id="col1" data-zFlex="20">Pages XXXXX</div>
+     <div class="tree-head-gutter" data-zFlex="5" id="gut1" tabindex="0"></div>
+     <div class="tree-head-col" id="col2" data-zFlex="20">Type</div>
+     <div class="tree-head-gutter" data-zFlex="5" id="gut2" tabindex="0">R2</div>
+     <div class="tree-head-col" id="col3" data-zFlex="50">Date</div>
+    </div>
+     <div class="tree-head-scroll-space"><div class="tree-head-scroll-space-container" style="display:none"></div></div>
+   </div>
+   <div class="tree-body" zs="_flexStrch">
+   <div class="tree-body-container">
+    <div class="tree">
+     <div class="tree-item">
+      <div class="tree-cell"><div class="tree-icon">v</div><div class="tree-field">Home</div></div>
+      <div class="tree-cell"><div class="tree-field">HTML</div></div>
+      <div class="tree-cell"><div class="tree-field">10/22/2014</div></div>
+     </div>
+    </div>
+   </div>
+   </div>
+   <style>
+   #inp1{leftX:1%;}
+   #inp2{leftX:2.25%;}
+   </style>
+  </div>
+  
+  <script>
+   
+ function inti(){
+ // setUp all the functions needed to run resizers
+ var resizers = document.querySelectorAll(".tree-head-gutter");
+ var resizersQty = resizers.length;
+  //alert(resizersQty);
+  for(var i = 0; i< resizersQty; i++){
+   var resizer = resizers[i];
+    resizer.addEventListener("keydown",onkeyDownResize,false);
+    resizer.addEventListener('touchstart', function(e) {e.preventDefault();e.target.mousedown();}, false);
+    resizer.addEventListener('mousedown', setResizer, false);
+    //resizer.addEventListener('touchend', function(e) {e.target.mouseup();}, false);
+    //resizer.addEventListener('mouseup', endResizer, false);
+  }  
+ }
+ inti();
+   
+   
+ 
+</script>
+  
+ <div style="border: 2px green solid">Below test</div>
+ 
+
+  <!--
+  <br><br><br><br><br><br><br><br><br><br><br>
+  
+  <tree-panel col="2">
+   <tree-head>
+  <tree-details>
+    <tree-spliter><input type=range min=0 max=100 value=50 id=fader step=1 list=volsettings></tree-spliter>
+   <tree-row>
+    <tree-col>Pages</tree-col>
+    <tree-col>Type</tree-col>
+   </tree-row>
+  </tree-details>
+ </tree-head>
+  </tree-panel>
+          <input type=range min=0 max=100 value=50 id=fader step=1 list=volsettings style="width:100%; margin-bottom:-300px; position:relative">
+  -->
+ <!-- 
+<tree-spliter draggable="true">X</tree-spliter>
+ <tree-panel col="2">
+ <tree-head>
+  <tree-details>
+   <tree-row><tree-col>Pages</tree-col><tree-col>Type</tree-col></tree-row>
+  </tree-details>
+ </tree-head>
+ <tree-body>
+  <tree-details>
+   <tree-row><s>v</s><tree-col>Home</tree-col><tree-col>HTML</tree-col></tree-row>
+  </tree-details>
+ </tree-body>
+</tree-panel>
+  -->
+  <!--
+<div id="tree-panel" col="2">
+ <div id="tree-head">
+  <div id="tree-details">
+   <div id="tree-row"><div id="tree-col">Pages</div><div>Type</div></div>
+  </tree-details>
+ </div>
+ <div id="tree-body">
+  <tree-details>
+   <div id="tree-row"><div id="tree-col">Pages</div><div>Type</div></div>
+  </tree-details>
+ </div>
+</div>
+ -->
+ 
+
+<!--    
+<style>
+    
+    #tablePanel{
+    height:auto;
+    width:100%;
+    overflow:scroll;
+    resize:vertical;
+    overflow:auto;
+    }
+    #treePanel{
+        width:100%;
+    }
+    
+    #treePanel details{
+        background:blue;
+        width:auto;
+    }
+    #treePanel summary{
+        display:
+        /*
+        display: -webkit-flex;
+	    display: flex;
+	    -webkit-flex-flow:row nowrap;
+	    flex-flow:row nowrap;
+        background:pinkx;
+        
+        display: -webkit-inline-flex;
+        display:inline-flex;
+        -webkit-flex-flow: row;
+	    flex-flow: row nowrap;
+        */
+    }
+    #treePanel div{
+        display: inline-block;
+        background:orange;
+    }
+    .t2, .t3{
+    }
+    
+    #treePanel details {padding-left: 1rem;}
+        #treePanel summary div:first-child{padding-left: 1rem; background:silver !important}
+        #treePanel summary:first-child div:first-child{padding-left: 0rem !important; background:silver !important; display: inline-block;width:40px;left-margin:500px;}
+    #treePanel summary {margin-left: -1rem; background:purple;}
+    
+    /*
+#pizzaXX {
+	margin: 0rem;
+	padding: 0rem;
+	background-color: #eee;
+	border-radius: 3px;
+	box-shadow: 0 1px 0 1px rgba(0,0,0,0.1);
+}
+#pizzaXX details {padding-left: 1rem;}
+#pizzaXX summary {margin-left: -1rem;}
+    */
+   </style>
+ --> 	
+
+
+  
+<!--
+ var rules = '.myClass {background-color:#AAD2DE;} p { color:red} '
+    try
+    {
+        ss.innerHTML = rules;
+    }
+    catch(exc)
+    {
+        var parts = rules.split(/\s*[{}]\s*/);
+        for (var i=0; i<parts.length; i+=2)
+            ss.styleSheet.addRule(parts[i],parts[i+1]);
+    }
+-->
+
+
+  
+</body></html>
+
